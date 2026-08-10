@@ -39,8 +39,8 @@ jobs:
       - name: Set SDK versions
         run: GRADLE_FILE=$(ls android/app/build.gradle.kts 2>/dev/null || echo android/app/build.gradle) && sed -i "s/flutter.minSdkVersion/23/" "$GRADLE_FILE" && sed -i "s/flutter.compileSdkVersion/36/" "$GRADLE_FILE" && sed -i "s/flutter.targetSdkVersion/36/" "$GRADLE_FILE"
 
-      - name: Disable R8 minification
-        run: GRADLE_FILE=$(ls android/app/build.gradle.kts 2>/dev/null || echo android/app/build.gradle) && sed -i "s/isMinifyEnabled = true/isMinifyEnabled = false/" "$GRADLE_FILE" && sed -i "s/isShrinkResources = true/isShrinkResources = false/" "$GRADLE_FILE" && sed -i "s/minifyEnabled true/minifyEnabled false/" "$GRADLE_FILE" && sed -i "s/shrinkResources true/shrinkResources false/" "$GRADLE_FILE"
+      - name: Force-disable R8 minification
+        run: GRADLE_FILE=$(ls android/app/build.gradle.kts 2>/dev/null || echo android/app/build.gradle) && if [[ "$GRADLE_FILE" == *.kts ]]; then printf '\nandroid {\n    buildTypes {\n        getByName("release") {\n            isMinifyEnabled = false\n            isShrinkResources = false\n        }\n    }\n}\n' >> "$GRADLE_FILE"; else printf '\nandroid {\n    buildTypes {\n        release {\n            minifyEnabled false\n            shrinkResources false\n        }\n    }\n}\n' >> "$GRADLE_FILE"; fi
 
       - name: Get dependencies
         run: flutter pub get
