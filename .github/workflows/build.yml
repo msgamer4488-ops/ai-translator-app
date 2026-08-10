@@ -23,7 +23,6 @@ jobs:
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.24.0'
           channel: 'stable'
 
       - name: Generate native Android project
@@ -40,6 +39,8 @@ jobs:
       - name: Set minSdkVersion (ML Kit / speech_to_text need 21+)
         run: |
           sed -i 's/flutter.minSdkVersion/23/' android/app/build.gradle
+          sed -i 's/flutter.compileSdkVersion/35/' android/app/build.gradle
+          sed -i 's/flutter.targetSdkVersion/35/' android/app/build.gradle
 
       - name: Get dependencies
         run: flutter pub get
