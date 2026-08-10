@@ -1,0 +1,45 @@
+name: ai_language_translator_pro
+description: "AI Language Translator Pro - Android port"
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.3.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.6
+
+  # Networking (translation calls)
+  http: ^1.2.1
+
+  # OCR - on-device text recognition (replaces pytesseract)
+  google_mlkit_text_recognition: ^0.13.0
+  image_picker: ^1.1.2
+
+  # Text-to-Speech (replaces pyttsx3 / gTTS)
+  flutter_tts: ^4.0.2
+
+  # Speech-to-Text (replaces SpeechRecognition)
+  speech_to_text: ^7.0.0
+
+  # File open / save (replaces filedialog, docx/pdf writers)
+  file_picker: ^8.0.0+1
+  path_provider: ^2.1.3
+  pdf: ^3.10.8
+  share_plus: ^9.0.0
+
+  # Local persistence (replaces translator_config.json / translator_history.json)
+  shared_preferences: ^2.2.3
+
+  # Permissions (microphone for STT, storage where applicable)
+  permission_handler: ^11.3.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true

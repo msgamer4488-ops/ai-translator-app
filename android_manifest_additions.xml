@@ -1,0 +1,10 @@
+<!--
+  Add these lines inside the <manifest> tag of
+  android/app/src/main/AndroidManifest.xml (above <application>),
+  after you've run `flutter create .` per the README.
+-->
+
+<uses-permission android:name="android.permission.INTERNET" />
+<uses-permission android:name="android.permission.RECORD_AUDIO" />
+<uses-permission android:name="android.permission.CAMERA" />
+<uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
