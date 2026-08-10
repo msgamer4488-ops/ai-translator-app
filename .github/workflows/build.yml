@@ -43,8 +43,8 @@ jobs:
           then
               GRADLE_FILE=android/app/build.gradle; fi
           sed -i 's/flutter.minSdkVersion/23/' "$GRADLE_FILE"
-          sed -i 's/flutter.compileSdkVersion/35/' "$GRADLE_FILE"
-          sed -i 's/flutter.targetSdkVersion/35/' "$GRADLE_FILE"
+          sed -i 's/flutter.compileSdkVersion/36/' "$GRADLE_FILE"
+          sed -i 's/flutter.targetSdkVersion/36/' "$GRADLE_FILE"
 
       - name: Get dependencies
         run: flutter pub get
