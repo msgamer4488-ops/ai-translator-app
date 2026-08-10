@@ -36,25 +36,11 @@ jobs:
           sed -i 's#<manifest xmlns:android="http://schemas.android.com/apk/res/android">#<manifest xmlns:android="http://schemas.android.com/apk/res/android">\n    <uses-permission android:name="android.permission.INTERNET" />\n    <uses-permission android:name="android.permission.RECORD_AUDIO" />\n    <uses-permission android:name="android.permission.CAMERA" />\n    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />#' "$MANIFEST"
           cat "$MANIFEST"
 
-      - name: Set minSdkVersion (ML Kit / speech_to_text need 21+)
-        run: |
-          GRADLE_FILE=android/app/build.gradle.kts
-                if [ ! -f "$GRADLE_FILE" ]; 
-          then
-              GRADLE_FILE=android/app/build.gradle; fi
-          sed -i 's/flutter.minSdkVersion/23/' "$GRADLE_FILE"
-          sed -i 's/flutter.compileSdkVersion/36/' "$GRADLE_FILE"
+      - name: Set SDK versions
+        run: GRADLE_FILE=$(ls android/app/build.gradle.kts 2>/dev/null || echo android/app/build.gradle) && sed -i "s/flutter.minSdkVersion/23/" "$GRADLE_FILE" && sed -i "s/flutter.compileSdkVersion/36/" "$GRADLE_FILE" && sed -i "s/flutter.targetSdkVersion/36/" "$GRADLE_FILE"
 
-          sed -i 's/flutter.targetSdkVersion/36/' "$GRADLE_FILE"
-      - name: Disable R8 minification (avoids R8/plugin compatibility failure) 
-        run: |
-             GRADLE_FILE=android/app/build.gradle.kts if [ ! -f "$GRADLE_FILE" ];
-             then 
-             GRADLE_FILE=android/app/build.gradle; fi 
-             sed -i 's/isMinifyEnabled = true/isMinifyEnabled = false/' "$GRADLE_FILE" 
-             sed -i 's/isShrinkResources = true/isShrinkResources = false/' "$GRADLE_FILE" 
-             sed -i 's/minifyEnabled true/minifyEnabled false/' "$GRADLE_FILE" 
-             sed -i 's/shrinkResources true/shrinkResources false/' "$GRADLE_FILE"
+      - name: Disable R8 minification
+        run: GRADLE_FILE=$(ls android/app/build.gradle.kts 2>/dev/null || echo android/app/build.gradle) && sed -i "s/isMinifyEnabled = true/isMinifyEnabled = false/" "$GRADLE_FILE" && sed -i "s/isShrinkResources = true/isShrinkResources = false/" "$GRADLE_FILE" && sed -i "s/minifyEnabled true/minifyEnabled false/" "$GRADLE_FILE" && sed -i "s/shrinkResources true/shrinkResources false/" "$GRADLE_FILE"
 
       - name: Get dependencies
         run: flutter pub get
