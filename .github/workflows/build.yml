@@ -35,17 +35,12 @@ jobs:
           sed -i 's#<manifest xmlns:android="http://schemas.android.com/apk/res/android">#<manifest xmlns:android="http://schemas.android.com/apk/res/android">\n    <uses-permission android:name="android.permission.INTERNET" />\n    <uses-permission android:name="android.permission.RECORD_AUDIO" />\n    <uses-permission android:name="android.permission.CAMERA" />\n    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />#' "$MANIFEST"
           cat "$MANIFEST"
 
-      - name: Force compileSdkVersion 36 and set SDK versions
+      - name: Set compileSdkVersion and SDK versions
         run: |
-          # Force compileSdkVersion 36 on all subprojects/plugins
-          ROOT_GRADLE=$(ls android/build.gradle.kts android/build.gradle 2>/dev/null | head -n 1)
-          if [[ "$ROOT_GRADLE" == *.kts ]]; then
-            printf '\nsubprojects {\n    afterEvaluate {\n        if (project.hasProperty("android")) {\n            configure<com.android.build.gradle.BaseExtension> {\n                compileSdkVersion(36)\n            }\n        }\n    }\n}\n' >> "$ROOT_GRADLE"
-          else
-            printf '\nsubprojects {\n    afterEvaluate {\n        if (project.hasProperty("android")) {\n            android {\n                compileSdkVersion 36\n            }\n        }\n    }\n}\n' >> "$ROOT_GRADLE"
-          fi
-
-          # Update app-level gradle properties
+          # Set compileSdkVersion globally in gradle.properties
+          echo "android.suppressUnsupportedCompileSdk=36" >> android/gradle.properties
+          
+          # Force compileSdkVersion, minSdkVersion, targetSdkVersion in app gradle file
           APP_GRADLE=$(ls android/app/build.gradle.kts android/app/build.gradle 2>/dev/null | head -n 1)
           sed -i "s/flutter.minSdkVersion/23/" "$APP_GRADLE"
           sed -i "s/flutter.compileSdkVersion/36/" "$APP_GRADLE"
