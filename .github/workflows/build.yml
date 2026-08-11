@@ -33,34 +33,44 @@ jobs:
           MANIFEST=android/app/src/main/AndroidManifest.xml
           sed -i 's#<manifest xmlns:android="http://schemas.android.com/apk/res/android">#<manifest xmlns:android="http://schemas.android.com/apk/res/android">\n    <uses-permission android:name="android.permission.INTERNET" />\n    <uses-permission android:name="android.permission.RECORD_AUDIO" />\n    <uses-permission android:name="android.permission.CAMERA" />\n    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />#' "$MANIFEST"
 
-      - name: Configure SDK levels via Python
+      - name: Patch Gradle and SDK via Python
         run: |
           python3 -c '
-          import os
+          import os, glob
 
-          # Update gradle.properties
+          # 1. Update properties
           with open("android/gradle.properties", "a") as f:
-              f.write("\nandroid.suppressUnsupportedCompileSdk=36\n")
+              f.write("\nandroid.suppressUnsupportedCompileSdk=36\nandroid.enableR8=false\n")
 
-          # Update local.properties
           with open("android/local.properties", "a") as f:
               f.write("\nflutter.minSdkVersion=23\nflutter.compileSdkVersion=36\nflutter.targetSdkVersion=36\n")
 
-          # Patch root build file to force compileSdk 36 for all plugins
-          root_gradle = "android/build.gradle.kts" if os.path.exists("android/build.gradle.kts") else "android/build.gradle"
-          if os.path.exists(root_gradle):
-              with open(root_gradle, "a") as f:
-                  if root_gradle.endswith(".kts"):
-                      f.write("\nsubprojects {\n    plugins.withId(\"com.android.library\") {\n        val android = extensions.findByName(\"android\") as? com.android.build.gradle.LibraryExtension\n        android?.compileSdk = 36\n    }\n}\n")
+          # 2. Disable R8 in app build.gradle / build.gradle.kts
+          app_gradles = glob.glob("android/app/build.gradle*")
+          if app_gradles:
+              target = app_gradles[0]
+              with open(target, "a") as f:
+                  if target.endswith(".kts"):
+                      f.write("\nandroid { buildTypes { getByName(\"release\") { isMinifyEnabled = false; isShrinkResources = false } } }\n")
                   else:
-                      f.write("\nsubprojects {\n    plugins.withId(\"com.android.library\") {\n        android {\n            compileSdkVersion 36\n        }\n    }\n}\n")
+                      f.write("\nandroid { buildTypes { release { minifyEnabled false; shrinkResources false } } }\n")
+
+          # 3. Patch settings.gradle / settings.gradle.kts for all subprojects
+          settings_files = glob.glob("android/settings.gradle*")
+          if settings_files:
+              target = settings_files[0]
+              with open(target, "a") as f:
+                  if target.endswith(".kts"):
+                      f.write("\ngradle.lifecycle.beforeProject { if (plugins.hasPlugin(\"com.android.library\")) { (extensions.findByName(\"android\") as? com.android.build.gradle.BaseExtension)?.compileSdkVersion(36) } }\n")
+                  else:
+                      f.write("\ngradle.beforeProject { p -> p.plugins.withId(\"com.android.library\") { p.android.compileSdkVersion 36 } }\n")
           '
 
       - name: Get dependencies
         run: flutter pub get
 
       - name: Build release APK
-        run: flutter build apk --release
+        run: flutter build apk --release --no-shrink
 
       - name: Upload APK as workflow artifact
         uses: actions/upload-artifact@v4
