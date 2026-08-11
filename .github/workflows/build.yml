@@ -33,12 +33,12 @@ jobs:
           MANIFEST=android/app/src/main/AndroidManifest.xml
           sed -i 's#<manifest xmlns:android="http://schemas.android.com/apk/res/android">#<manifest xmlns:android="http://schemas.android.com/apk/res/android">\n    <uses-permission android:name="android.permission.INTERNET" />\n    <uses-permission android:name="android.permission.RECORD_AUDIO" />\n    <uses-permission android:name="android.permission.CAMERA" />\n    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />#' "$MANIFEST"
 
-      - name: Configure ProGuard and Gradle via Python
+      - name: Configure ProGuard and SDK overrides via Python
         run: |
           python3 -c '
           import os, glob
 
-          # 1. Proguard rules for ML Kit & general libraries
+          # 1. Write ProGuard rules for ML Kit and Flutter plugins
           proguard_content = """
           -keep class com.google.mlkit.** { *; }
           -dontwarn com.google.mlkit.**
@@ -48,15 +48,15 @@ jobs:
           with open("android/app/proguard-rules.pro", "w") as f:
               f.write(proguard_content)
 
-          # 2. Update gradle.properties with suppress flag only
+          # 2. Add flags in gradle.properties
           with open("android/gradle.properties", "a") as f:
               f.write("\nandroid.suppressUnsupportedCompileSdk=36\n")
 
-          # 3. Update local.properties for SDK overrides
+          # 3. Add SDK levels in local.properties
           with open("android/local.properties", "a") as f:
               f.write("\nflutter.minSdkVersion=23\nflutter.compileSdkVersion=36\nflutter.targetSdkVersion=36\n")
 
-          # 4. Patch build.gradle / build.gradle.kts to disable minification safely and attach ProGuard
+          # 4. Disable R8 minification safely in app build file
           app_gradles = glob.glob("android/app/build.gradle*")
           if app_gradles:
               target = app_gradles[0]
@@ -66,15 +66,15 @@ jobs:
                   else:
                       f.write("\nandroid { buildTypes { release { minifyEnabled false; shrinkResources false; proguardFiles getDefaultProguardFile(\"proguard-android-optimize.txt\"), \"proguard-rules.pro\" } } }\n")
 
-          # 5. Force compileSdk 36 for all subprojects (plugins) in root build.gradle
+          # 5. Safely override compileSdk across subprojects without using afterEvaluate
           root_gradles = glob.glob("android/build.gradle*")
           if root_gradles:
               target = root_gradles[0]
               with open(target, "a") as f:
                   if target.endswith(".kts"):
-                      f.write("\nsubprojects { afterEvaluate { if (project.hasProperty(\"android\")) { val android = project.extensions.findByName(\"android\") as? com.android.build.gradle.BaseExtension; android?.compileSdkVersion(36) } } }\n")
+                      f.write("\nsubprojects { project.configurations.all { resolutionStrategy.eachDependency { if (requested.group == \"com.android.tools.build\") { } } }; plugins.withId(\"com.android.library\") { (extensions.findByName(\"android\") as? com.android.build.gradle.BaseExtension)?.compileSdkVersion(36) } }\n")
                   else:
-                      f.write("\nsubprojects { afterEvaluate { project -> if (project.hasProperty(\"android\")) { project.android.compileSdkVersion 36 } } }\n")
+                      f.write("\nsubprojects { plugins.withId(\"com.android.library\") { project.android.compileSdkVersion 36 } }\n")
           '
 
       - name: Get dependencies
