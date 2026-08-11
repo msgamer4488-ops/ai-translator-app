@@ -35,12 +35,18 @@ jobs:
           sed -i 's#<manifest xmlns:android="http://schemas.android.com/apk/res/android">#<manifest xmlns:android="http://schemas.android.com/apk/res/android">\n    <uses-permission android:name="android.permission.INTERNET" />\n    <uses-permission android:name="android.permission.RECORD_AUDIO" />\n    <uses-permission android:name="android.permission.CAMERA" />\n    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />#' "$MANIFEST"
           cat "$MANIFEST"
 
-      - name: Set compileSdkVersion and SDK versions
+      - name: Force compileSdkVersion 36 across all plugins
         run: |
-          # Set compileSdkVersion globally in gradle.properties
-          echo "android.suppressUnsupportedCompileSdk=36" >> android/gradle.properties
+          # Inject global override into settings.gradle.kts
+          SETTINGS_FILE=$(ls android/settings.gradle.kts android/settings.gradle 2>/dev/null | head -n 1)
           
-          # Force compileSdkVersion, minSdkVersion, targetSdkVersion in app gradle file
+          if [[ "$SETTINGS_FILE" == *.kts ]]; then
+            printf '\ngradle.beforeProject { project -> project.plugins.withId("com.android.library") { project.extensions.getByType(com.android.build.gradle.LibraryExtension::class.java).compileSdk = 36 } }\n' >> "$SETTINGS_FILE"
+          else
+            printf '\ngradle.beforeProject { project -> project.plugins.withId("com.android.library") { project.extensions.getByType(com.android.build.gradle.LibraryExtension).compileSdk = 36 } }\n' >> "$SETTINGS_FILE"
+          fi
+
+          # Update app-level gradle configuration
           APP_GRADLE=$(ls android/app/build.gradle.kts android/app/build.gradle 2>/dev/null | head -n 1)
           sed -i "s/flutter.minSdkVersion/23/" "$APP_GRADLE"
           sed -i "s/flutter.compileSdkVersion/36/" "$APP_GRADLE"
