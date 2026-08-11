@@ -44,16 +44,14 @@ jobs:
           flutter.targetSdkVersion=36
           EOF
 
-      - name: Force compileSdk for all subproject plugins
+      - name: Configure ProGuard for ML Kit
         run: |
-          python3 -c '
-          import glob
-          root_gradles = glob.glob("android/build.gradle*")
-          if root_gradles:
-              target = root_gradles[0]
-              with open(target, "a") as f:
-                  f.write("\nsubprojects {\n    afterEvaluate {\n        if (plugins.hasPlugin(\"com.android.library\")) {\n            android.compileSdkVersion = 36\n        }\n    }\n}\n")
-          '
+          cat << 'EOF' > android/app/proguard-rules.pro
+          -keep class com.google.mlkit.** { *; }
+          -dontwarn com.google.mlkit.**
+          -keep class io.flutter.plugin.** { *; }
+          -dontwarn io.flutter.plugin.**
+          EOF
 
       - name: Get dependencies
         run: flutter pub get
