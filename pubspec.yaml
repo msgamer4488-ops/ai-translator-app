@@ -25,10 +25,10 @@ dependencies:
   speech_to_text: ^7.0.0
 
   # File open / save (replaces filedialog, docx/pdf writers)
-  file_picker: ^6.1.1
+  file_picker: ^8.1.2
   path_provider: ^2.1.3
   pdf: ^3.10.8
-  share_plus: ^12.0.2
+  share_plus: ^10.0.0
 
   # Local persistence (replaces translator_config.json / translator_history.json)
   shared_preferences: ^2.2.3
