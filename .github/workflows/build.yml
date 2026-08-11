@@ -14,7 +14,7 @@ jobs:
       - name: Check out repo
         uses: actions/checkout@v4
 
-      - name: Set up Java (required by Android Gradle build)
+      - name: Set up Java
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
@@ -33,15 +33,34 @@ jobs:
           MANIFEST=android/app/src/main/AndroidManifest.xml
           sed -i 's#<manifest xmlns:android="http://schemas.android.com/apk/res/android">#<manifest xmlns:android="http://schemas.android.com/apk/res/android">\n    <uses-permission android:name="android.permission.INTERNET" />\n    <uses-permission android:name="android.permission.RECORD_AUDIO" />\n    <uses-permission android:name="android.permission.CAMERA" />\n    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />#' "$MANIFEST"
 
+      - name: Configure SDK levels via Python
+        run: |
+          python3 -c '
+          import os
+
+          # Update gradle.properties
+          with open("android/gradle.properties", "a") as f:
+              f.write("\nandroid.suppressUnsupportedCompileSdk=36\n")
+
+          # Update local.properties
+          with open("android/local.properties", "a") as f:
+              f.write("\nflutter.minSdkVersion=23\nflutter.compileSdkVersion=36\nflutter.targetSdkVersion=36\n")
+
+          # Patch root build file to force compileSdk 36 for all plugins
+          root_gradle = "android/build.gradle.kts" if os.path.exists("android/build.gradle.kts") else "android/build.gradle"
+          if os.path.exists(root_gradle):
+              with open(root_gradle, "a") as f:
+                  if root_gradle.endswith(".kts"):
+                      f.write("\nsubprojects {\n    plugins.withId(\"com.android.library\") {\n        val android = extensions.findByName(\"android\") as? com.android.build.gradle.LibraryExtension\n        android?.compileSdk = 36\n    }\n}\n")
+                  else:
+                      f.write("\nsubprojects {\n    plugins.withId(\"com.android.library\") {\n        android {\n            compileSdkVersion 36\n        }\n    }\n}\n")
+          '
+
       - name: Get dependencies
         run: flutter pub get
 
-      - name: Build release APK with custom SDK flags
-        run: |
-          flutter build apk --release \
-            --build-property=flutter.minSdkVersion=23 \
-            --build-property=flutter.compileSdkVersion=36 \
-            --build-property=flutter.targetSdkVersion=36
+      - name: Build release APK
+        run: flutter build apk --release
 
       - name: Upload APK as workflow artifact
         uses: actions/upload-artifact@v4
