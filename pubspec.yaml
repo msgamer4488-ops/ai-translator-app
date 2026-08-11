@@ -11,11 +11,11 @@ dependencies:
   flutter:
     sdk: flutter
 
-  # Updated packages to support Android SDK 36 natively
-  file_picker: ^11.0.3
-  permission_handler: ^14.0.0
-  google_mlkit_text_recognition: ^0.16.0
-  share_plus: ^13.3.0
+  # Compatible and stable package versions
+  file_picker: ^8.1.4
+  permission_handler: ^11.3.1
+  google_mlkit_text_recognition: ^0.13.1
+  share_plus: ^10.1.4
   flutter_tts: ^4.2.0
   speech_to_text: ^7.0.0
   cupertino_icons: ^1.0.8
