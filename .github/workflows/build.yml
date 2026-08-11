@@ -33,25 +33,15 @@ jobs:
           MANIFEST=android/app/src/main/AndroidManifest.xml
           sed -i 's#<manifest xmlns:android="http://schemas.android.com/apk/res/android">#<manifest xmlns:android="http://schemas.android.com/apk/res/android">\n    <uses-permission android:name="android.permission.INTERNET" />\n    <uses-permission android:name="android.permission.RECORD_AUDIO" />\n    <uses-permission android:name="android.permission.CAMERA" />\n    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />#' "$MANIFEST"
 
-      - name: Set SDK properties globally
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Build release APK with custom SDK flags
         run: |
-          # Write SDK configurations directly into local.properties
-          cat << 'EOF' >> android/local.properties
-          flutter.minSdkVersion=23
-          flutter.compileSdkVersion=36
-          flutter.targetSdkVersion=36
-          EOF
-
-          # Enable compileSdk suppression flag for modern AGP
-          echo "android.suppressUnsupportedCompileSdk=36" >> android/gradle.properties
-
-      - name: Disable R8 minification via Gradle CLI
-        run: |
-          # Pass -P flags directly during build to bypass build.gradle editing
-          flutter pub get
-
-      - name: Build release APK
-        run: flutter build apk --release --extra-front-end-options=--no-g3-lint
+          flutter build apk --release \
+            --build-property=flutter.minSdkVersion=23 \
+            --build-property=flutter.compileSdkVersion=36 \
+            --build-property=flutter.targetSdkVersion=36
 
       - name: Upload APK as workflow artifact
         uses: actions/upload-artifact@v4
