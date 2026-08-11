@@ -27,7 +27,6 @@ jobs:
 
       - name: Generate native Android project
         # Only needed because this repo ships lib/ + pubspec.yaml only.
-        # --org can be changed to your own reverse-domain identifier.
         run: flutter create . --platforms=android --org com.example --project-name ai_language_translator_pro
 
       - name: Add required Android permissions
@@ -36,11 +35,30 @@ jobs:
           sed -i 's#<manifest xmlns:android="http://schemas.android.com/apk/res/android">#<manifest xmlns:android="http://schemas.android.com/apk/res/android">\n    <uses-permission android:name="android.permission.INTERNET" />\n    <uses-permission android:name="android.permission.RECORD_AUDIO" />\n    <uses-permission android:name="android.permission.CAMERA" />\n    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />#' "$MANIFEST"
           cat "$MANIFEST"
 
-      - name: Set SDK versions
-        run: GRADLE_FILE=$(ls android/app/build.gradle.kts 2>/dev/null || echo android/app/build.gradle) && sed -i "s/flutter.minSdkVersion/23/" "$GRADLE_FILE" && sed -i "s/flutter.compileSdkVersion/36/" "$GRADLE_FILE" && sed -i "s/flutter.targetSdkVersion/36/" "$GRADLE_FILE"
+      - name: Force compileSdkVersion 36 and set SDK versions
+        run: |
+          # Force compileSdkVersion 36 on all subprojects/plugins
+          ROOT_GRADLE=$(ls android/build.gradle.kts android/build.gradle 2>/dev/null | head -n 1)
+          if [[ "$ROOT_GRADLE" == *.kts ]]; then
+            printf '\nsubprojects {\n    afterEvaluate {\n        if (project.hasProperty("android")) {\n            configure<com.android.build.gradle.BaseExtension> {\n                compileSdkVersion(36)\n            }\n        }\n    }\n}\n' >> "$ROOT_GRADLE"
+          else
+            printf '\nsubprojects {\n    afterEvaluate {\n        if (project.hasProperty("android")) {\n            android {\n                compileSdkVersion 36\n            }\n        }\n    }\n}\n' >> "$ROOT_GRADLE"
+          fi
+
+          # Update app-level gradle properties
+          APP_GRADLE=$(ls android/app/build.gradle.kts android/app/build.gradle 2>/dev/null | head -n 1)
+          sed -i "s/flutter.minSdkVersion/23/" "$APP_GRADLE"
+          sed -i "s/flutter.compileSdkVersion/36/" "$APP_GRADLE"
+          sed -i "s/flutter.targetSdkVersion/36/" "$APP_GRADLE"
 
       - name: Force-disable R8 minification
-        run: GRADLE_FILE=$(ls android/app/build.gradle.kts 2>/dev/null || echo android/app/build.gradle) && if [[ "$GRADLE_FILE" == *.kts ]]; then printf '\nandroid {\n    buildTypes {\n        getByName("release") {\n            isMinifyEnabled = false\n            isShrinkResources = false\n        }\n    }\n}\n' >> "$GRADLE_FILE"; else printf '\nandroid {\n    buildTypes {\n        release {\n            minifyEnabled false\n            shrinkResources false\n        }\n    }\n}\n' >> "$GRADLE_FILE"; fi
+        run: |
+          APP_GRADLE=$(ls android/app/build.gradle.kts android/app/build.gradle 2>/dev/null | head -n 1)
+          if [[ "$APP_GRADLE" == *.kts ]]; then
+            printf '\nandroid {\n    buildTypes {\n        getByName("release") {\n            isMinifyEnabled = false\n            isShrinkResources = false\n        }\n    }\n}\n' >> "$APP_GRADLE"
+          else
+            printf '\nandroid {\n    buildTypes {\n        release {\n            minifyEnabled false\n            shrinkResources false\n        }\n    }\n}\n' >> "$APP_GRADLE"
+          fi
 
       - name: Get dependencies
         run: flutter pub get
